@@ -1,19 +1,19 @@
-import { Component, IComponent } from '@core/pipeline';
-import { ItemTemplate } from '@income';
-import { Pokemon, PokemonGender } from '@outcome/pokemon';
-import { Util } from '@util';
-import { Encounter } from './enounter';
-const gameMaster = require('@data/GAME_MASTER.json');
+import { Component, IComponent } from "@core/pipeline";
+import { ItemTemplate } from "@income";
+import { Pokemon, PokemonGender } from "@outcome/pokemon";
+import { Util } from "@util";
+import { Encounter } from "./enounter";
+const gameMaster = require("@data/GAME_MASTER.json");
 
 @Component({
-  pipeline: 'pokemon',
-  dependencies: [
-    new Encounter()
-  ]
+  pipeline: "pokemon",
+  dependencies: [new Encounter()],
 })
 export class GenderPercentage implements IComponent {
   private isItemTemplateSpawn(item: ItemTemplate): boolean {
-    return new RegExp('^(SPAWN_V[0-9]+_POKEMON_?.*)', 'g').test(item.templateId);
+    return new RegExp("^(SPAWN_V[0-9]+_POKEMON_?.*)", "g").test(
+      item.templateId
+    );
   }
 
   /**
@@ -22,11 +22,11 @@ export class GenderPercentage implements IComponent {
    * @returns {PokemonGender} Object with the Pokémon Gender Percent values
    */
   private getGenderPercent(gameMaster, pokemonId: string): PokemonGender {
-    const itemTemplate = gameMaster
-      .itemTemplates
-      .filter(itemTemplate => this.isItemTemplateSpawn(itemTemplate))
-      .find(itemTemplate =>
-        itemTemplate.genderSettings.pokemon === pokemonId);
+    const itemTemplate = gameMaster.itemTemplate
+      .filter((itemTemplate) => this.isItemTemplateSpawn(itemTemplate))
+      .find(
+        (itemTemplate) => itemTemplate.genderSettings.pokemon === pokemonId
+      );
     let malePercent = itemTemplate.genderSettings.gender.malePercent;
     let femalePercent = itemTemplate.genderSettings.gender.femalePercent;
 
@@ -47,12 +47,15 @@ export class GenderPercentage implements IComponent {
 
     return {
       malePercent: malePercent,
-      femalePercent: femalePercent
+      femalePercent: femalePercent,
     };
   }
 
   Process(pokemon: Pokemon, rawPokemon: ItemTemplate): Pokemon {
-    const gender = this.getGenderPercent(gameMaster, rawPokemon.pokemonSettings.pokemonId);
+    const gender = this.getGenderPercent(
+      gameMaster,
+      rawPokemon.pokemon.uniqueId
+    );
     if (gender) {
       pokemon.encounter.gender = gender;
     }

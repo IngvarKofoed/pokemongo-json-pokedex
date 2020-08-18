@@ -1,30 +1,30 @@
-import { IComponent, Pipeline } from '@core/pipeline';
-import { RootObject, ItemTemplate } from '@income';
-import { Pokemon } from '@outcome/pokemon';
-import { forEachSeries, map } from 'p-iteration';
-import * as _ from 'lodash';
-import { Util } from '@util';
-import { Identifyable } from '@core';
+import { IComponent, Pipeline } from "@core/pipeline";
+import { RootObject, ItemTemplate } from "@income";
+import { Pokemon } from "@outcome/pokemon";
+import { forEachSeries, map } from "p-iteration";
+import * as _ from "lodash";
+import { Util } from "@util";
+import { Identifyable } from "@core";
 
 /**
  * Represents the Pipeline which converts Game Master Pokemon related
  * input data to Pokemon models
  */
 export class PokemonPipeline extends Pipeline {
-  private readonly pokemonRegex: string = '^(V[0-9]+_POKEMON_?.*)';
+  private readonly pokemonRegex: string = "^(V[0-9]+_POKEMON_?.*)";
   private readonly specialMasterFiles: RootObject[];
 
   constructor(input: RootObject, special: RootObject[]) {
-    super(input, 'pokemon');
+    super(input, "pokemon");
     this.specialMasterFiles = special;
   }
 
   private isPokemon(templateId: string) {
-    return new RegExp('^(V[0-9]+_POKEMON_?.*)', 'g').test(templateId);
+    return new RegExp("^(V[0-9]+_POKEMON_?.*)", "g").test(templateId);
   }
 
   private isNormalPokemon(templateId: string) {
-    return new RegExp('^(V[0-9]+_POKEMON_?.*_NORMAL)', 'g').test(templateId)
+    return new RegExp("^(V[0-9]+_POKEMON_?.*_NORMAL)", "g").test(templateId);
   }
 
   /**
@@ -35,17 +35,32 @@ export class PokemonPipeline extends Pipeline {
     return this.isPokemon(id) && !this.isNormalPokemon(id);
   }
 
-
   public async Run(): Promise<Object[]> {
-    const pokemonData = <Pokemon[]> await super.Run();
+    console.log("RUN - 1");
+    const pokemonData = <Pokemon[]>await super.Run();
+    console.log("RUN - 2");
 
     // Handle special game master files
-    const specialInputs = await map(this.specialMasterFiles, input => input.itemTemplates.filter(p => this.isItemTemplate(p)));
-    const legacyMoveComponents = [new LegacyQuickMoves(), new LegacyCinematicMoves()];
-    await forEachSeries(specialInputs, async specialInput => {
-      await forEachSeries(specialInput, async itemTemplate => {
-        const currentPokemon = pokemonData.find(value => value.id === itemTemplate.pokemonSettings.pokemonId);
-        await forEachSeries(legacyMoveComponents, component => component.Process(currentPokemon, itemTemplate));
+    const specialInputs = await map(this.specialMasterFiles, (input) => {
+      // console.log(input);
+      return (input as any).itemTemplates.filter((p) =>
+        this.isItemTemplate(p)
+      ) as ItemTemplate[];
+    });
+    const legacyMoveComponents = [
+      new LegacyQuickMoves(),
+      new LegacyCinematicMoves(),
+    ];
+    await forEachSeries(specialInputs, async (specialInput) => {
+      await forEachSeries(specialInput, async (itemTemplate) => {
+        const id =
+          itemTemplate.pokemon !== undefined
+            ? itemTemplate.pokemon.uniqueId
+            : (itemTemplate as any).pokemonSettings.pokemonId;
+        const currentPokemon = pokemonData.find((value) => value.id === id);
+        await forEachSeries(legacyMoveComponents, (component) =>
+          component.Process(currentPokemon, itemTemplate)
+        );
       });
     });
 
@@ -61,15 +76,19 @@ abstract class LegacyMove implements IComponent {
   }
 
   Process(pokemon: Pokemon, rawPokemon: ItemTemplate): Pokemon {
-    const specialMoves = _
-        .chain(rawPokemon.pokemonSettings[this.moveType])
-        .uniq()
-        .map(Util.SnakeCase2Identifyable)
-        .filter(maybeSpecialMove => pokemon[this.moveType].find(move => move.id === maybeSpecialMove.id) === undefined)
-        .map(LegacyMove.ToLegacyMove)
-        .value();
+    // const specialMoves = _.chain(rawPokemon.pokemonSettings[this.moveType])
+    //   .uniq()
+    //   .map(Util.SnakeCase2Identifyable)
+    //   .filter(
+    //     (maybeSpecialMove) =>
+    //       pokemon[this.moveType].find(
+    //         (move) => move.id === maybeSpecialMove.id
+    //       ) === undefined
+    //   )
+    //   .map(LegacyMove.ToLegacyMove)
+    //   .value();
 
-    pokemon[this.moveType] = pokemon[this.moveType].concat(specialMoves);
+    // pokemon[this.moveType] = pokemon[this.moveType].concat(specialMoves);
     return pokemon;
   }
 
@@ -77,24 +96,23 @@ abstract class LegacyMove implements IComponent {
     return {
       name: move.name,
       id: move.id,
-      legacy: true
-    }
+      legacy: true,
+    };
   }
 }
 
 class LegacyCinematicMoves extends LegacyMove {
   constructor() {
-    super('cinematicMoves');
+    super("cinematicMoves");
   }
 }
 
 class LegacyQuickMoves extends LegacyMove {
   constructor() {
-    super('quickMoves');
+    super("quickMoves");
   }
 }
 
 export interface IdentifiableMove extends Identifyable {
   legacy: boolean;
 }
-

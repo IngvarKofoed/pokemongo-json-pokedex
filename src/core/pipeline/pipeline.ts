@@ -1,6 +1,10 @@
-import { ComponentRegister, ComponentRegistry, ComponentType } from '@core/pipeline';
-import { ItemTemplate, RootObject } from '../../income';
-import { mapSeries, forEachSeries } from 'p-iteration';
+import {
+  ComponentRegister,
+  ComponentRegistry,
+  ComponentType,
+} from "@core/pipeline";
+import { ItemTemplate, RootObject } from "../../income";
+import { mapSeries, forEachSeries } from "p-iteration";
 
 export interface IPipeline {
   Run(): Promise<any>;
@@ -31,15 +35,16 @@ export abstract class Pipeline implements IPipeline {
 
   public get Components() {
     if (!this._components) {
-      this._components = ComponentRegistry.Instance.Components.filter(component => component.settings.pipeline === this.name);
+      this._components = ComponentRegistry.Instance.Components.filter(
+        (component) => component.settings.pipeline === this.name
+      );
     }
     return this._components;
   }
   abstract isItemTemplate(item: ItemTemplate): boolean;
 
   Parse(): ItemTemplate[] {
-    return this.input.itemTemplates
-      .filter(p => this.isItemTemplate(p));
+    return this.input.itemTemplate.filter((p) => this.isItemTemplate(p));
   }
 
   /**
@@ -54,11 +59,16 @@ export abstract class Pipeline implements IPipeline {
     ancestors.push(component.id);
     this.visitedComponents[component.id] = true;
 
-    component.dependencies.forEach(dependency => {
+    component.dependencies.forEach((dependency) => {
       // @ts-ignore
       const dependencyId = dependency.constructor.name;
-      if (ancestors.indexOf(dependencyId) >= 0)  // if already in ancestors, a closed chain exists.
-        throw new Error(`Circular dependency "${dependencyId}'" is required by "${component.id}": ${ancestors.join(' -> ')}`);
+      if (ancestors.indexOf(dependencyId) >= 0)
+        // if already in ancestors, a closed chain exists.
+        throw new Error(
+          `Circular dependency "${dependencyId}'" is required by "${
+            component.id
+          }": ${ancestors.join(" -> ")}`
+        );
 
       // if already exists, do nothing
       if (this.visitedComponents[component.id]) return;
@@ -76,10 +86,14 @@ export abstract class Pipeline implements IPipeline {
     this.sortedComponents = [];
     this.visitedComponents = {};
 
-    this.Components.forEach(component => this.visitComponent(component));
+    this.Components.forEach((component) => this.visitComponent(component));
   }
 
-  private async process(component: ComponentRegister, output: any, input: any): Promise<any> {
+  private async process(
+    component: ComponentRegister,
+    output: any,
+    input: any
+  ): Promise<any> {
     return new Promise((resolve, reject) => {
       let callback;
 
@@ -92,22 +106,29 @@ export abstract class Pipeline implements IPipeline {
 
       if (callback && callback.then) {
         // Is async
-        callback.then(resolve).catch(reject)
+        callback.then(resolve).catch(reject);
       } else {
         resolve(callback);
       }
-
     });
   }
 
-  private shouldComponentBeProcessed(component: ComponentRegister, input: ItemTemplate) {
+  private shouldComponentBeProcessed(
+    component: ComponentRegister,
+    input: ItemTemplate
+  ) {
     // No templateId settings was set (= allow every item template)
-    return !component.settings.templateId ||
+    return (
+      !component.settings.templateId ||
       // or is actually correct template id
-      input.templateId === component.settings.templateId;
+      input.templateId === component.settings.templateId
+    );
   }
 
-  private async processSimpleMapComponent(component: ComponentRegister, output: any[]) {
+  private async processSimpleMapComponent(
+    component: ComponentRegister,
+    output: any[]
+  ) {
     return await mapSeries(this.parsedInput, async (input, index) => {
       const processedItem = output[index] || {};
       if (this.shouldComponentBeProcessed(component, input)) {
@@ -123,13 +144,19 @@ export abstract class Pipeline implements IPipeline {
    * Runs the components of its Pipeline
    */
   public async Run(): Promise<Object[]> {
+    console.log("super.RUN - 1");
     this.resolveDependencyResolution();
+    console.log("super.RUN - 2");
     let output = [];
-    await forEachSeries(this.sortedComponents, async component => {
+    await forEachSeries(this.sortedComponents, async (component) => {
       if (component.settings.type === ComponentType.SIMPLE_MAP) {
+        console.log("super.RUN - 3");
         output = await this.processSimpleMapComponent(component, output);
+        console.log("super.RUN - 4");
       } else if (component.settings.type === ComponentType.ADVANCED_MAP) {
+        console.log("super.RUN - 5");
         output = await this.process(component, output, this.parsedInput);
+        console.log("super.RUN - 6");
       }
     });
     return output;

@@ -1,16 +1,15 @@
-import { Component, IComponent } from '@core/pipeline/index';
-import { ItemTemplate } from '@income/index';
-import { Pokemon } from '@outcome/pokemon/index';
-import { Util } from '@util/index';
-import * as _ from 'lodash';
+import { Component, IComponent } from "@core/pipeline/index";
+import { ItemTemplate } from "@income/index";
+import { Pokemon } from "@outcome/pokemon/index";
+import { Util } from "@util/index";
+import * as _ from "lodash";
 
 @Component({
-  pipeline: 'pokemon'
+  pipeline: "pokemon",
 })
 export class CinematicMoves implements IComponent {
   Process(pokemon: Pokemon, rawPokemon: ItemTemplate): Pokemon {
-    const cinematicMoves = _
-      .chain(rawPokemon.pokemonSettings.cinematicMoves)
+    const cinematicMoves = _.chain(rawPokemon.pokemon.cinematicMoves)
       .uniq()
       .map(Util.SnakeCase2Identifyable)
       .value();

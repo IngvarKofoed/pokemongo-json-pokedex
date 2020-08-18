@@ -1,11 +1,11 @@
-import { Component, IComponent } from '@core/pipeline';
-import { ItemTemplate } from '@income';
-import { Pokemon } from '@outcome/pokemon';
-import { Util } from '@util';
-import AppSettings from '@settings/app';
+import { Component, IComponent } from "@core/pipeline";
+import { ItemTemplate } from "@income";
+import { Pokemon } from "@outcome/pokemon";
+import { Util } from "@util";
+import AppSettings from "@settings/app";
 
 @Component({
-  pipeline: 'pokemon'
+  pipeline: "pokemon",
 })
 export class MaxCP implements IComponent {
   /**
@@ -19,18 +19,29 @@ export class MaxCP implements IComponent {
    *
    * @returns {Number} The maximum CP amount of the given values
    */
-  public Calculate(baseStamina: number, baseAttack: number, baseDefense: number): number {
+  public Calculate(
+    baseStamina: number,
+    baseAttack: number,
+    baseDefense: number
+  ): number {
     // Stamina = (BaseStamina + IndividualStamina) * TotalCPMultiplier
-    let stamina = (baseStamina + AppSettings.MAX_INDIVIDUAL_STAMINA) * AppSettings.MAX_CP_MULTIPLIER;
+    let stamina =
+      (baseStamina + AppSettings.MAX_INDIVIDUAL_STAMINA) *
+      AppSettings.MAX_CP_MULTIPLIER;
     // Attack = (BaseAttack + IndividualAttack) * TotalCpMultiplier
-    let attack = (baseAttack + AppSettings.MAX_INDIVIDUAL_ATTACK) * AppSettings.MAX_CP_MULTIPLIER;
+    let attack =
+      (baseAttack + AppSettings.MAX_INDIVIDUAL_ATTACK) *
+      AppSettings.MAX_CP_MULTIPLIER;
     // Defense = (BaseDefense + IndividualDefense) * TotalCpMultiplier
-    let defense = (baseDefense + AppSettings.MAX_INDIVIDUAL_DEFENSE) * AppSettings.MAX_CP_MULTIPLIER;
+    let defense =
+      (baseDefense + AppSettings.MAX_INDIVIDUAL_DEFENSE) *
+      AppSettings.MAX_CP_MULTIPLIER;
 
     // CP = MAX(10, FLOOR(Stamina^0.5 * Attack * Def^0.5 / 10))
-    return Math.max(10,
+    return Math.max(
+      10,
       Math.floor(
-        Math.pow(stamina, 0.5) * attack * Math.pow(defense, 0.5) / 10
+        (Math.pow(stamina, 0.5) * attack * Math.pow(defense, 0.5)) / 10
       )
     );
   }
@@ -39,7 +50,14 @@ export class MaxCP implements IComponent {
    * Calculates the max CP of a Pokemon
    */
   Process(pokemon: Pokemon, rawPokemon: ItemTemplate): Pokemon {
-    pokemon.maxCP = this.Calculate(rawPokemon.pokemonSettings.stats.baseStamina, rawPokemon.pokemonSettings.stats.baseAttack, rawPokemon.pokemonSettings.stats.baseDefense);
+    if (rawPokemon.pokemon === undefined) {
+      console.log(rawPokemon);
+    }
+    pokemon.maxCP = this.Calculate(
+      rawPokemon.pokemon.stats.baseStamina,
+      rawPokemon.pokemon.stats.baseAttack,
+      rawPokemon.pokemon.stats.baseDefense
+    );
     return pokemon;
   }
 }

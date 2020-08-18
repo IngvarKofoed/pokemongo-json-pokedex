@@ -1,14 +1,18 @@
-import { Component, IComponent } from '@core/pipeline';
-import { ItemTemplate } from '@income';
-import { Pokemon } from '@outcome/pokemon';
-import { Util } from '@util';
+import { Component, IComponent } from "@core/pipeline";
+import { ItemTemplate } from "@income";
+import { Pokemon } from "@outcome/pokemon";
+import { Util } from "@util";
 
 @Component({
-  pipeline: 'pokemon'
+  pipeline: "pokemon",
 })
 export class QuickMoves implements IComponent {
   Process(pokemon: Pokemon, rawPokemon: ItemTemplate): Pokemon {
-    pokemon.quickMoves = rawPokemon.pokemonSettings.quickMoves.map(Util.SnakeCase2Identifyable);
-    return pokemon;
+    if (rawPokemon.pokemon.quickMoves) {
+      pokemon.quickMoves = rawPokemon.pokemon.quickMoves.map(
+        Util.SnakeCase2Identifyable
+      );
+      return pokemon;
+    }
   }
 }
